@@ -2,7 +2,6 @@ package monitor
 
 import (
 	"log"
-	"net/http"
 	"sync" // Pour protéger l'accès concurrentiel à knownStates
 	"time"
 
@@ -47,17 +46,18 @@ func (m *UrlMonitor) Start() {
 func (m *UrlMonitor) checkUrls() {
 	log.Println("[MONITOR] Lancement de la vérification de l'état des URLs...")
 
-	// TODO : Récupérer toutes les URLs longues actives depuis le linkRepo (GetAllLinks).
-	// Gérer l'erreur si la récupération échoue.
-	// Si erreur : log.Printf("[MONITOR] ERREUR lors de la récupération des liens pour la surveillance : %v", err)
-	links, err :=
+	links, err := m.linkRepo.GetAllLinks()
+	if err != nil {
+		log.Printf("[MONITOR] ERREUR lors de la récupération des liens pour la surveillance : %v", err)
+		return
+	}
 
 	for _, link := range links {
 		// TODO : Pour chaque lien, vérifier son accessibilité (isUrlAccessible).
 		currentState :=
 
-		// Protéger l'accès à la map 'knownStates' car 'checkUrls' peut être exécuté concurremment
-		m.mu.Lock()
+			// Protéger l'accès à la map 'knownStates' car 'checkUrls' peut être exécuté concurremment
+			m.mu.Lock()
 		previousState, exists := m.knownStates[link.ID] // Récupère l'état précédent
 		m.knownStates[link.ID] = currentState           // Met à jour l'état actuel
 		m.mu.Unlock()
@@ -86,7 +86,6 @@ func (m *UrlMonitor) isUrlAccessible(url string) bool {
 	// Si err : log.Printf("[MONITOR] Erreur d'accès à l'URL '%s': %v", url, err)
 
 	// TODO Assurez-vous de fermer le corps de la réponse pour libérer les ressources
-
 
 	// Déterminer l'accessibilité basée sur le code de statut HTTP.
 	return resp.StatusCode >= 200 && resp.StatusCode < 400 // Codes 2xx ou 3xx
