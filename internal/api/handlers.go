@@ -51,19 +51,21 @@ type CreateLinkRequest struct {
 func CreateShortLinkHandler(linkService *services.LinkService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req CreateLinkRequest
-		// TODO : Tente de lier le JSON de la requête à la structure CreateLinkRequest.
-		// Gin gère la validation 'binding'.
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 
+		link, err := linkService.CreateLink(req.LongURL)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 
-		// TODO: Appeler le LinkService (CreateLink pour créer le nouveau lien.
-
-
-		// Retourne le code court et l'URL longue dans la réponse JSON.
-		// TODO Choisir le bon code HTTP
-		c.JSON(XXX, gin.H{
+		c.JSON(http.StatusCreated, gin.H{
 			"short_code":     link.ShortCode,
 			"long_url":       link.LongURL,
-			"full_short_url": "http://localhost:8080/" + link.ShortCode, // TODO: Utiliser cfg.Server.BaseURL ici
+			"full_short_url": "http://localhost:8080/" + link.ShortCode,
 		})
 	}
 }
