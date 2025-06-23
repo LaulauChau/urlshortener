@@ -17,12 +17,10 @@ var ClickEventsChannel chan models.ClickEvent
 
 
 // SetupRoutes configure toutes les routes de l'API Gin et injecte les dépendances nécessaires
-func SetupRoutes(router *gin.Engine, linkService *services.LinkService) {
+func SetupRoutes(router *gin.Engine, linkService *services.LinkService, cfg *config.Config) {
 	// Le channel est initialisé ici.
 	if ClickEventsChannel == nil {
-		// TODO Créer le channel ici (make), il doit être bufférisé
-		// La taille du buffer doit être configurable via Viper (cfg.Analytics.BufferSize)
-		ClickEventsChannel =
+		ClickEventsChannel = make(chan models.ClickEvent, cfg.Analytics.BufferSize)
 	}
 
 	router.GET("/health", HealthCheckHandler)
@@ -65,7 +63,7 @@ func CreateShortLinkHandler(linkService *services.LinkService) gin.HandlerFunc {
 		c.JSON(http.StatusCreated, gin.H{
 			"short_code":     link.ShortCode,
 			"long_url":       link.LongURL,
-			"full_short_url": "http://localhost:8080/" + link.ShortCode,
+			"full_short_url": cfg.Server.BaseURL + link.ShortCode,
 		})
 	}
 }
