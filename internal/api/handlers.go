@@ -6,15 +6,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/axellelanca/urlshortener/internal/config"
 	"github.com/axellelanca/urlshortener/internal/models"
 	"github.com/axellelanca/urlshortener/internal/services"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm" // Pour gérer gorm.ErrRecordNotFound
 )
 
-
 var ClickEventsChannel chan models.ClickEvent
-
 
 // SetupRoutes configure toutes les routes de l'API Gin et injecte les dépendances nécessaires
 func SetupRoutes(router *gin.Engine, linkService *services.LinkService, cfg *config.Config) {
@@ -104,15 +103,19 @@ func RedirectHandler(linkService *services.LinkService) gin.HandlerFunc {
 // GetLinkStatsHandler gère la récupération des statistiques pour un lien spécifique.
 func GetLinkStatsHandler(linkService *services.LinkService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		 // TODO Récupère le shortCode de l'URL avec c.Param
+		shortCode := c.Param("shortCode")
 
-		// TODO 6: Appeler le LinkService pour obtenir le lien et le nombre total de clics.
-			// Gérer le cas où le lien n'est pas trouvé.
-		// toujours avec l'erreur Gorm ErrRecordNotFound
-			// Gérer d'autres erreurs
+		link, totalClicks, err := linkService.GetLinkStats(shortCode)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Link not found"})
+				return
+			}
+			log.Printf("Error retrieving stats for %s: %v", shortCode, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+			return
 		}
 
-		// Retourne les statistiques dans la réponse JSON.
 		c.JSON(http.StatusOK, gin.H{
 			"short_code":   link.ShortCode,
 			"long_url":     link.LongURL,
