@@ -73,36 +73,33 @@ func CreateShortLinkHandler(linkService *services.LinkService) gin.HandlerFunc {
 // RedirectHandler gère la redirection d'une URL courte vers l'URL longue et l'enregistrement asynchrone des clics.
 func RedirectHandler(linkService *services.LinkService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Récupère le shortCode de l'URL avec c.Param
-		shortCode :=
+		shortCode := c.Param("shortCode")
 
-		// TODO 2: Récupérer l'URL longue associée au shortCode depuis le linkService (GetLinkByShortCode)
-
+		link, err := linkService.GetLinkByShortCode(shortCode)
 		if err != nil {
-			// Si le lien n'est pas trouvé, retourner HTTP 404 Not Found.
-			// Utiliser errors.Is et l'erreur Gorm
-			if  { // Utilisez errors.Is(err, gorm.ErrRecordNotFound) en production si l'erreur est wrappée
-
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Link not found"})
 				return
 			}
-			// Gérer d'autres erreurs potentielles de la base de données ou du service
 			log.Printf("Error retrieving link for %s: %v", shortCode, err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 			return
 		}
 
-		// TODO 3: Créer un ClickEvent avec les informations pertinentes.
-		clickEvent :=
+		clickEvent := models.ClickEvent{
+			LinkID:    link.ID,
+			Timestamp: time.Now(),
+			UserAgent: c.GetHeader("User-Agent"),
+			IPAddress: c.ClientIP(),
+		}
 
-		// TODO 4: Envoyer le ClickEvent dans le ClickEventsChannel avec le Multiplexage.
-		// Utilise un `select` avec un `default` pour éviter de bloquer si le channel est plein.
-		// Pour le default, juste un message à afficher :
-		// log.Printf("Warning: ClickEventsChannel is full, dropping click event for %s.", shortCode)
+		select {
+		case ClickEventsChannel <- clickEvent:
+		default:
+			log.Printf("Warning: ClickEventsChannel is full, dropping click event for %s.", shortCode)
+		}
 
-
-
-		// TODO 5: Effectuer la redirection HTTP 302 (StatusFound) vers l'URL longue.
-
+		c.Redirect(http.StatusFound, link.LongURL)
 	}
 }
 
