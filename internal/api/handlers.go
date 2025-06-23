@@ -27,12 +27,11 @@ func SetupRoutes(router *gin.Engine, linkService *services.LinkService) {
 
 	router.GET("/health", HealthCheckHandler)
 
-	// TODO : Routes de l'API
-	// Doivent être au format /api/v1/
-	// POST /links
-	// GET /links/:shortCode/stats
-
-
+	apiV1 := router.Group("/api/v1")
+	{
+		apiV1.POST("/links", CreateShortLinkHandler(linkService))
+		apiV1.GET("/links/:shortCode/stats", GetLinkStatsHandler(linkService))
+	}
 
 	// Route de Redirection (au niveau racine pour les short codes)
 	router.GET("/:shortCode", RedirectHandler(linkService))
