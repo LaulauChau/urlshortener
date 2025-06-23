@@ -13,9 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
-
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
 
 type LinkService struct {
 	linkRepo  repository.LinkRepository
