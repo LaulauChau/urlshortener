@@ -68,9 +68,10 @@ func (m *UrlMonitor) checkUrls() {
 			continue
 		}
 
-		// TODO : Comparer l'état actuel avec l'état précédent.
-		// Si l'état a changé, générer une fausse notification dans les logs.
-		// log.Printf("[NOTIFICATION] Le lien %s (%s) est passé de %s à %s !"
+		if previousState != currentState {
+			log.Printf("[NOTIFICATION] Le lien %s (%s) est passé de %s à %s !",
+				link.ShortCode, link.LongURL, formatState(previousState), formatState(currentState))
+		}
 
 	}
 	log.Println("[MONITOR] Vérification de l'état des URLs terminée.")
