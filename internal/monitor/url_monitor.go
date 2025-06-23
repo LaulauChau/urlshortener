@@ -18,11 +18,13 @@ type UrlMonitor struct {
 	mu          sync.Mutex                // Mutex pour protéger l'accès concurrentiel à knownStates
 }
 
-// TODO finir cette fonction
 // NewUrlMonitor crée et retourne une nouvelle instance de UrlMonitor.
-// Attention: retourne un pointeur
 func NewUrlMonitor(linkRepo repository.LinkRepository, interval time.Duration) *UrlMonitor {
-	return
+	return &UrlMonitor{
+		linkRepo:    linkRepo,
+		interval:    interval,
+		knownStates: make(map[uint]bool),
+	}
 }
 
 // Start lance la boucle de surveillance périodique des URLs.
