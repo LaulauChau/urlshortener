@@ -13,9 +13,7 @@ import (
 )
 
 
-// TODO Créer une variable ClickEventsChannel qui est un chan de type ClickEvent
-// ClickEventsChannel est le channel global (ou injecté) utilisé pour envoyer les événements de clic
-// aux workers asynchrones. Il est bufferisé pour ne pas bloquer les requêtes de redirection.
+var ClickEventsChannel chan models.ClickEvent
 
 
 // SetupRoutes configure toutes les routes de l'API Gin et injecte les dépendances nécessaires
