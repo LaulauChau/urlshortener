@@ -6,27 +6,25 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/axellelanca/urlshortener/internal/config"
 	"github.com/axellelanca/urlshortener/internal/models"
 	"github.com/axellelanca/urlshortener/internal/services"
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm" // Pour gérer gorm.ErrRecordNotFound
 )
 
 var ClickEventsChannel chan models.ClickEvent
 
 // SetupRoutes configure toutes les routes de l'API Gin et injecte les dépendances nécessaires
-func SetupRoutes(router *gin.Engine, linkService *services.LinkService, cfg *config.Config) {
+func SetupRoutes(router *gin.Engine, linkService *services.LinkService, bufferSize int, baseURL string) {
 	// Le channel est initialisé ici.
 	if ClickEventsChannel == nil {
-		ClickEventsChannel = make(chan models.ClickEvent, cfg.Analytics.BufferSize)
+		ClickEventsChannel = make(chan models.ClickEvent, bufferSize)
 	}
 
 	router.GET("/health", HealthCheckHandler)
 
 	apiV1 := router.Group("/api/v1")
 	{
-		apiV1.POST("/links", CreateShortLinkHandler(linkService))
+		apiV1.POST("/links", CreateShortLinkHandler(linkService, baseURL))
 		apiV1.GET("/links/:shortCode/stats", GetLinkStatsHandler(linkService))
 	}
 
@@ -45,7 +43,7 @@ type CreateLinkRequest struct {
 }
 
 // CreateShortLinkHandler gère la création d'une URL courte.
-func CreateShortLinkHandler(linkService *services.LinkService) gin.HandlerFunc {
+func CreateShortLinkHandler(linkService *services.LinkService, baseURL string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req CreateLinkRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -62,7 +60,7 @@ func CreateShortLinkHandler(linkService *services.LinkService) gin.HandlerFunc {
 		c.JSON(http.StatusCreated, gin.H{
 			"short_code":     link.ShortCode,
 			"long_url":       link.LongURL,
-			"full_short_url": cfg.Server.BaseURL + link.ShortCode,
+			"full_short_url": baseURL + "/" + link.ShortCode,
 		})
 	}
 }
@@ -74,7 +72,7 @@ func RedirectHandler(linkService *services.LinkService) gin.HandlerFunc {
 
 		link, err := linkService.GetLinkByShortCode(shortCode)
 		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
+			if errors.Is(err, models.ErrLinkNotFound) {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Link not found"})
 				return
 			}
@@ -107,7 +105,7 @@ func GetLinkStatsHandler(linkService *services.LinkService) gin.HandlerFunc {
 
 		link, totalClicks, err := linkService.GetLinkStats(shortCode)
 		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
+			if errors.Is(err, models.ErrLinkNotFound) {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Link not found"})
 				return
 			}
