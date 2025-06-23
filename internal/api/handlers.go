@@ -13,9 +13,7 @@ import (
 
 var ClickEventsChannel chan models.ClickEvent
 
-// SetupRoutes configure toutes les routes de l'API Gin et injecte les dépendances nécessaires
 func SetupRoutes(router *gin.Engine, linkService *services.LinkService, bufferSize int, baseURL string) {
-	// Le channel est initialisé ici.
 	if ClickEventsChannel == nil {
 		ClickEventsChannel = make(chan models.ClickEvent, bufferSize)
 	}
@@ -28,21 +26,17 @@ func SetupRoutes(router *gin.Engine, linkService *services.LinkService, bufferSi
 		apiV1.GET("/links/:shortCode/stats", GetLinkStatsHandler(linkService))
 	}
 
-	// Route de Redirection (au niveau racine pour les short codes)
 	router.GET("/:shortCode", RedirectHandler(linkService))
 }
 
-// HealthCheckHandler gère la route /health pour vérifier l'état du service.
 func HealthCheckHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-// CreateLinkRequest représente le corps de la requête JSON pour la création d'un lien.
 type CreateLinkRequest struct {
-	LongURL string `json:"long_url" binding:"required,url"` // 'binding:required' pour validation, 'url' pour format URL
+	LongURL string `json:"long_url" binding:"required,url"`
 }
 
-// CreateShortLinkHandler gère la création d'une URL courte.
 func CreateShortLinkHandler(linkService *services.LinkService, baseURL string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req CreateLinkRequest
@@ -65,7 +59,6 @@ func CreateShortLinkHandler(linkService *services.LinkService, baseURL string) g
 	}
 }
 
-// RedirectHandler gère la redirection d'une URL courte vers l'URL longue et l'enregistrement asynchrone des clics.
 func RedirectHandler(linkService *services.LinkService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		shortCode := c.Param("shortCode")
@@ -98,7 +91,6 @@ func RedirectHandler(linkService *services.LinkService) gin.HandlerFunc {
 	}
 }
 
-// GetLinkStatsHandler gère la récupération des statistiques pour un lien spécifique.
 func GetLinkStatsHandler(linkService *services.LinkService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		shortCode := c.Param("shortCode")
