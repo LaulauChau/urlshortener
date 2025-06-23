@@ -1,0 +1,4 @@
+/bin
+/url-shortener
+server.log
+coverage.out
